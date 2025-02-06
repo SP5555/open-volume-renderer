@@ -408,7 +408,7 @@ DeviceOptix7::Impl::Module::createModule(OptixDeviceContext optix_context, const
 
   char log[2048];
   size_t sizeof_log = sizeof(log);
-  OPTIX_CHECK(optixModuleCreateFromPTX(optix_context, &compile_opts, &pipeline.compile_opts,
+  OPTIX_CHECK(optixModuleCreate(optix_context, &compile_opts, &pipeline.compile_opts,
                                        /* shader program */ ptx_code.c_str(), ptx_code.size(),
                                        /* logs and output */ log, &sizeof_log, &handle));
   general_log_cb(log, sizeof_log);
