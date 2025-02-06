@@ -90,3 +90,30 @@ Detailed steps below:
 ```
 TODO
 ```
+
+## Modifications for Windows 11
+This fork includes modifications and testing for Windows 11 using Visual Studio 2022.
+- Install Optix 8.1.0 from [NVIDIA](https://developer.nvidia.com/designworks/optix/download)
+- Install Intel OneAPI TBB from [Intel](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onetbb.html)
+- Create (and enter) a build directory
+```
+    mkdir build
+    cd build
+```
+- Configure with cmake (Debug Mode)
+```
+cmake -G "Visual Studio 17 2022" -T host=x64 -A x64 .. -DCMAKE_BUILD_TYPE=Debug
+# cmake -G "Visual Studio 17 2022" -T host=x64 -A x64 .. ^
+#     -DCMAKE_BUILD_TYPE=Debug ^
+#     -DCMAKE_PREFIX_PATH=<path-to-libtorch> ^
+#     -Dospray_DIR=<path-to-ospray>\lib\cmake\ospray-x.x.0 ^
+#     -DTBB_DIR=<path-to-tbb>\lib\cmake\tbb
+```
+- Then, build
+```
+cmake --build .
+```
+- In the directory containing the executable, run:
+```
+renderapp.exe <path to JSON>
+```
