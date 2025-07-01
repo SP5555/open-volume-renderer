@@ -117,6 +117,7 @@ DeviceOptix7::Impl::commit()
     CUDA_SYNC_CHECK(); /* stio all async rendering */
     params.frame.size = parent->params.fbsize.ref();
     framebuffer.resize(parent->params.fbsize.ref());
+    mlModel.importance_map_resize(params.d_importance_map, params.frame.size);
     framebuffer_size_updated = true;
     framebuffer_reset = true;
   }
@@ -197,6 +198,63 @@ DeviceOptix7::Impl::commit()
 }
 
 void
+DeviceOptix7::Impl::importance_map_update()
+{
+  if (framebuffer_reset || volumes_changed) {
+    mlModel.importance_map_update(
+      // importance map that the high res render use (one floating point per pixel)
+      params.d_importance_map,
+      // low res size (640x480 fixed)
+      params.frame.low_res_size,
+      // high res size (actual window)
+      params.frame.size,
+      // output buffer from low res render (RGBA or grayscale or smth else)
+      nullptr
+    );
+  }
+}
+
+void
+DeviceOptix7::Impl::render_low_res()
+{
+  if (!framebuffer_reset && !volumes_changed) {
+    // it is okay to not run low_res
+    return;
+  }
+
+  framebuffer_LR_rgba.resize(params.frame.low_res_size.long_product() * sizeof(vec4f));
+
+  if (volumes_changed) {
+    for (auto& v : volumes) {
+      v.commit(framebuffer_stream);
+    }
+    volumes_changed = false;
+  }
+
+  params.is_low_res_pass = true;
+  params.low_res_rgba = (vec4f*)framebuffer_LR_rgba.d_pointer();
+  params.frame.size_rcp = vec2f(1.f) / vec2f(params.frame.size);
+
+  if (params.enable_path_tracing)
+    stb_current = &sbt_pathtracing_main.sbt;
+  else
+    stb_current = &sbt_raymarching_main.sbt;
+  
+  // Launch dimensions
+  const vec3i launch_dims = { params.frame.low_res_size.x, params.frame.low_res_size.y, 1 };
+
+  params_buffer.upload_async(&params, 1, framebuffer_stream);
+
+  // OptiX Launch
+  OPTIX_CHECK(optixLaunch(
+    pipeline.handle, framebuffer_stream,
+    params_buffer.d_pointer(), params_buffer.sizeInBytes, stb_current,
+    launch_dims.x, launch_dims.y, launch_dims.z));
+
+  CUDA_SYNC_CHECK();
+}
+
+void
 DeviceOptix7::Impl::render()
 {
   /* commit others */
@@ -210,6 +268,8 @@ DeviceOptix7::Impl::render()
     }
     volumes_changed = false;
   }
+
+  params.is_low_res_pass = false;
 
   /* sanity check: make sure we launch only after first resize is already done: */
   if (params.frame.size.x <= 0 || params.frame.size.y <= 0)

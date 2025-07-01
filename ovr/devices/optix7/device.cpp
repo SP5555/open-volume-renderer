@@ -34,12 +34,24 @@ DeviceOptix7::commit()
 void
 DeviceOptix7::render()
 {
-  auto start = std::chrono::high_resolution_clock::now();
+  auto s_LR = std::chrono::high_resolution_clock::now();
+  pimpl->render_low_res();
+  CUDA_CHECK(cudaDeviceSynchronize());
+  auto e_LR = std::chrono::high_resolution_clock::now();
+  auto d_LR = std::chrono::duration_cast<std::chrono::microseconds>(e_LR - s_LR);
+
+  pimpl->importance_map_update();
+
+  auto s_HR = std::chrono::high_resolution_clock::now();
   pimpl->render();
   CUDA_CHECK(cudaDeviceSynchronize());
-  auto end = std::chrono::high_resolution_clock::now();
-  auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  render_time += diff.count();
+  auto e_HR = std::chrono::high_resolution_clock::now();
+  auto d_HR = std::chrono::duration_cast<std::chrono::microseconds>(e_HR - s_HR);
+
+  printf("480p pass: %.3f ms | Full-res pass: %.3f ms\n", d_LR / 1000.0, d_HR / 1000.0);
+  
+  render_time += d_LR.count();
+  render_time += d_HR.count();
 }
 
 void

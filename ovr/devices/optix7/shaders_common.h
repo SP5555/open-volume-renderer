@@ -397,12 +397,17 @@ compute_screen_position(vec2f& screen, uint32_t& pixel_index)
   /* compute a test pattern based on pixel ID */
   const int ix = optixGetLaunchIndex().x;
   const int iy = optixGetLaunchIndex().y;
-  const auto rsize = vec2f(1.f) / vec2f(optix_launch_params.frame.size);
+
+  const bool is_low_res = optix_launch_params.is_low_res_pass;
+  const vec2i fb_size = is_low_res ? optix_launch_params.frame.low_res_size
+                                   : optix_launch_params.frame.size;
+
+  const auto rsize = vec2f(1.f) / vec2f(fb_size);
 
   if (!optix_launch_params.enable_sparse_sampling) {
     /* method 1 */
     screen = vec2f((float)ix + .5f, (float)iy + .5f) * rsize;
-    pixel_index = ix + iy * optix_launch_params.frame.size.x;
+    pixel_index = ix + iy * fb_size.x;
   }
 
   else {
@@ -410,8 +415,8 @@ compute_screen_position(vec2f& screen, uint32_t& pixel_index)
 #ifdef OVR_OPTIX7_MASKING_VIA_DIRECT_SAMPLING
     {
       const int factor = optix_launch_params.sparse_sampling.downsample_factor;
-      const uint32_t index = ix + iy * optix_launch_params.frame.size.x / factor;
-      const uint32_t total = optix_launch_params.frame.size.long_product() / (factor * factor);
+      const uint32_t index = ix + iy * fb_size.x / factor;
+      const uint32_t total = fb_size.long_product() / (factor * factor);
 
       const vec2f& focus_center = optix_launch_params.focus_center;
       const float& focus_scale = optix_launch_params.focus_scale;
@@ -424,13 +429,13 @@ compute_screen_position(vec2f& screen, uint32_t& pixel_index)
 
       screen = vec2f(fx, fy);
 
-      const uint32_t sx = uint32_t(optix_launch_params.frame.size.x * fx) % optix_launch_params.frame.size.x;
-      const uint32_t sy = uint32_t(optix_launch_params.frame.size.y * fy) % optix_launch_params.frame.size.y;
+      const uint32_t sx = uint32_t(fb_size.x * fx) % fb_size.x;
+      const uint32_t sy = uint32_t(fb_size.y * fy) % fb_size.y;
       assert(sx >= 0);
       assert(sy >= 0);
-      assert(sx < optix_launch_params.frame.size.x);
-      assert(sy < optix_launch_params.frame.size.y);
-      pixel_index = sx + sy * optix_launch_params.frame.size.x;
+      assert(sx < fb_size.x);
+      assert(sy < fb_size.y);
+      pixel_index = sx + sy * fb_size.x;
     }
 #endif
 
@@ -441,9 +446,9 @@ compute_screen_position(vec2f& screen, uint32_t& pixel_index)
       int sy = optix_launch_params.sparse_sampling.xs_and_ys[2 * ix + 1];
       assert(sx >= 0);
       assert(sy >= 0);
-      assert(sx < optix_launch_params.frame.size.x);
-      assert(sy < optix_launch_params.frame.size.y);
-      pixel_index = sx + sy * optix_launch_params.frame.size.x;
+      assert(sx < fb_size.x);
+      assert(sy < fb_size.y);
+      pixel_index = sx + sy * fb_size.x;
       screen = vec2f((float)sx + .5f, (float)sy + .5f) * rsize;
     }
 #endif

@@ -5,6 +5,7 @@
 #include "device.h"
 
 #include "params.h"
+#include "dummy_model.h"
 
 #include <array>
 #include <cstring>
@@ -21,9 +22,13 @@ struct DeviceOptix7::Impl {
   DeviceOptix7* parent{ nullptr };
 
 public:
+  MLModel mlModel;
+
   void init(int argc, const char** argv, DeviceOptix7* parent);
   void swap();
   void commit();
+  void importance_map_update();
+  void render_low_res();
   void render();
   void mapframe(FrameBufferData*);
 
@@ -151,6 +156,9 @@ private:
   LaunchParams params;
   CUDABuffer params_buffer;
   /*! @} */
+
+  /*! low-res ssp1 rendered image */
+  CUDABuffer framebuffer_LR_rgba;
 
   /*! the rendered image */
   FrameBuffer framebuffer;

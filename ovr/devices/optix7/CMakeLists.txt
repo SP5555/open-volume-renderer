@@ -20,6 +20,7 @@ if(OVR_BUILD_DEVICE_OPTIX7)
     device_impl.h
     device.cpp
     device.h
+    dummy_model.h
     optix7_common.h
     params.h
     volume.cpp

@@ -323,8 +323,15 @@ render_raymarching(vec3f org,
 extern "C" __global__ void
 __raygen__render_frame()
 {
-  assert(optix_launch_params.frame.size.x > 0 && "invalid framebuffer size");
-  assert(optix_launch_params.frame.size.y > 0 && "invalid framebuffer size");
+  bool is_low_res_pass = optix_launch_params.is_low_res_pass;
+
+  if (is_low_res_pass) {
+    assert(optix_launch_params.frame.low_res_size.x > 0 && "invalid framebuffer size");
+    assert(optix_launch_params.frame.low_res_size.y > 0 && "invalid framebuffer size");
+  } else {
+    assert(optix_launch_params.frame.size.x > 0 && "invalid framebuffer size");
+    assert(optix_launch_params.frame.size.y > 0 && "invalid framebuffer size");
+  }
 
   /* normalized screen plane position, in [0,1]^2 */
   vec2f screen_coord;
@@ -346,7 +353,12 @@ __raygen__render_frame()
   output.gradient = 0.f;
   output.optical_flow = 0.f;
 
-  int spp = optix_launch_params.sample_per_pixel;
+  int spp;
+  if (is_low_res_pass) {
+    spp = optix_launch_params.low_res_spp;
+  } else {
+    spp = optix_launch_params.sample_per_pixel;
+  }
   assert(optix_launch_params.sample_per_pixel > 0 && "'sample_per_pixel' should always be positive");
   for (int s = 0; s < spp; s++) {
     /* jitter pixel for anti-aliasing */
@@ -385,6 +397,21 @@ __raygen__render_frame()
   //   const uint32_t code = (r << 0U) | (g << 8U) | (b << 16U) | (a << 24U);
   //   optix_launch_params.frame.rgba[pixel_index] = code;
   // }
+
+  if (is_low_res_pass) {
+    optix_launch_params.low_res_rgba[pixel_index] = vec4f(output.color, output.alpha);
+
+    // const int2 size = optix_launch_params.frame.low_res_size;
+    // const int mid_x = size.x / 2;
+    // const int mid_y = size.y / 2;
+    // const int mid_index = mid_y * size.x + mid_x;
+
+    // if (pixel_index == mid_index) {
+    //   const vec4f value = vec4f(output.color, output.alpha);
+    //   printf("[RayMarching] Middle pixel value = (%f, %f, %f, %f)\n", value.x, value.y, value.z, value.w);
+
+    return;
+  }
 
   if (optix_launch_params.enable_frame_accumulation) {
     assert(optix_launch_params.frame_index > 0 && "frame index should always be positive");
