@@ -60,7 +60,7 @@ public:
   bool has_camera() { return (m_camera_from); }
 
   args::ValueFlag<vec2i, args_impl::Vec2iReader> m_fbsize; /*! camera position - *from* where we are looking */
-  vec2i fbsize() { return (m_fbsize) ? args::get(m_fbsize) : vec2i(512, 512); }
+  vec2i fbsize() { return (m_fbsize) ? args::get(m_fbsize) : vec2i(1280, 720); }
 
   args::Flag m_path_tracing;
   bool path_tracing() { return (m_path_tracing); }
@@ -247,6 +247,7 @@ main(int ac, char** av)
   Camera camera = args.has_camera() ? Camera{
     args.camera_from(), args.camera_at(), args.camera_up()
   } : scene.camera;
+  // Camera camera = Camera{vec3f(0.f, 0.f, -1000.f), vec3f(62.5f, 50.f, 62.5f), vec3f(0.f, 1.f, 0.f)};
 
   auto camera_frame = glfwapp::CameraFrame(100.f);
   camera_frame.setOrientation(camera.from, camera.at, camera.up);
@@ -254,11 +255,75 @@ main(int ac, char** av)
   auto ren = create_renderer(args.device());
   ren->set_fbsize(args.fbsize());
   ren->set_frame_accumulation(true);
-  ren->set_path_tracing(args.path_tracing());
+  // ren->set_path_tracing(args.path_tracing());
+  ren->set_path_tracing(true);
   ren->set_sample_per_pixel(args.spp());
   ren->set_volume_sampling_rate(args.sampling_rate());
   ren->init(ac, (const char**)av, scene, camera);
   ren->commit();
+
+  // ===== experiment =====
+  const auto& fbsize = args.fbsize();
+  MainRenderer::FrameBufferData fbdata;
+
+  const float height = camera.at.y + 40.f;
+  const int num_views = 10;
+  const float radius = 600.f; // 240.f;
+  const float pi = 3.14159265f;
+
+  // warm up
+  ren->set_camera(camera_frame.get_position(), camera_frame.get_poi(), camera_frame.get_accurate_up());
+  ren->set_sparse_sampling(false);
+  ren->commit();
+  printf("Warm up: Started\n");
+  for (int i = 0; i < 5; ++i) ren->render();
+  printf("Warm up: Finished\n");
+
+  for (int i = 0; i < num_views; i++) {
+    float angle = 2.f * pi * i / num_views;
+    float x = radius * std::sin(angle);
+    float z = radius * std::cos(angle);
+    vec3f new_from = camera.at + vec3f(x, height, z);
+
+    camera_frame.setOrientation(new_from, camera.at, camera.up);
+    ren->set_camera(camera_frame.get_position(), camera_frame.get_poi(), camera_frame.get_accurate_up());
+
+    // Render SPP custom (set importance map in shaders_pathtracing.cu)
+    ren->set_frame_accumulation(false);
+    ren->set_sample_per_pixel(1);
+    ren->commit();
+    ren->render();
+    ren->mapframe(&fbdata);
+    auto* frame = (vec4f*)fbdata.rgba->to_cpu()->data();
+    char filename_spp1[64];
+    snprintf(filename_spp1, sizeof(filename_spp1), "img_%02d_sppCustom.png", i);
+    ovr::save_image(filename_spp1, frame, fbsize.x, fbsize.y);
+
+    // Render SPP 1
+    // ren->set_frame_accumulation(false);
+    // ren->set_sample_per_pixel(1);
+    // ren->commit();
+    // ren->render();
+    // ren->mapframe(&fbdata);
+    // auto* frame = (vec4f*)fbdata.rgba->to_cpu()->data();
+    // char filename_spp1[64];
+    // snprintf(filename_spp1, sizeof(filename_spp1), "img_%02d_spp1.exr", i);
+    // ovr::save_image(filename_spp1, frame, fbsize.x, fbsize.y);
+
+    // Render SPP 4096
+    // ren->set_frame_accumulation(true);
+    // ren->set_sample_per_pixel(1);
+    // ren->commit();
+    // for (int j = 0; j < 4096; ++j) ren->render();
+    // ren->mapframe(&fbdata);
+    // frame = (vec4f*)fbdata.rgba->to_cpu()->data();
+    // char filename_spp4096[64];
+    // snprintf(filename_spp4096, sizeof(filename_spp4096), "img_%02d_spp4096.exr", i);
+    // ovr::save_image(filename_spp4096, frame, fbsize.x, fbsize.y);
+  }
+
+  return 0;
+  // ===== experiment =====
 
 #if 1
   /* generate secret number between 1 and 10: */
@@ -275,7 +340,7 @@ main(int ac, char** av)
     ren->set_sparse_sampling(false);
     ren->commit();
 
-    for (int i = 0; i <  5; ++i) ren->render();
+    for (int i = 0; i < 5; ++i) ren->render();
 
     using Timer  = vidi::details::HighPerformanceTimer;
     {

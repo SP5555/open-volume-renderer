@@ -5,7 +5,7 @@
 #include "device.h"
 
 #include "params.h"
-#include "dummy_model.h"
+#include "adaptive_sampler_model.h"
 
 #include <array>
 #include <cstring>
@@ -157,9 +157,6 @@ private:
   CUDABuffer params_buffer;
   /*! @} */
 
-  /*! low-res ssp1 rendered image */
-  CUDABuffer framebuffer_LR_rgba;
-
   /*! the rendered image */
   FrameBuffer framebuffer;
   cudaStream_t framebuffer_stream{};
@@ -167,6 +164,9 @@ private:
   bool framebuffer_reset{ false };
   CUDABuffer framebuffer_accum_rgba;
   CUDABuffer framebuffer_accum_grad;
+
+  /*! low-res ssp1 rendered image */
+  CUDABuffer framebuffer_lowres_rgba;
 
   /*! all volumes share the same transfer function currently */
   std::vector<StructuredRegularVolume> volumes;

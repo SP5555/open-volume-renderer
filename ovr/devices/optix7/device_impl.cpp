@@ -202,14 +202,14 @@ DeviceOptix7::Impl::importance_map_update()
 {
   if (framebuffer_reset || volumes_changed) {
     mlModel.importance_map_update(
-      // importance map that the high res render use (one floating point per pixel)
+      // IN: output buffer from low res render (RGBA or grayscale or smth else)
+      params.low_res_rgba,
+      // OUT: importance map that the high res render use (one floating point per pixel)
       params.d_importance_map,
-      // low res size (640x480 fixed)
-      params.frame.low_res_size,
-      // high res size (actual window)
-      params.frame.size,
-      // output buffer from low res render (RGBA or grayscale or smth else)
-      nullptr
+      // IN: low res size (640x480 fixed)
+      params.low_res_size,
+      // IN: high res size (actual window)
+      params.frame.size
     );
   }
 }
@@ -222,7 +222,7 @@ DeviceOptix7::Impl::render_low_res()
     return;
   }
 
-  framebuffer_LR_rgba.resize(params.frame.low_res_size.long_product() * sizeof(vec4f));
+  framebuffer_lowres_rgba.resize(params.low_res_size.long_product() * sizeof(vec4f));
 
   if (volumes_changed) {
     for (auto& v : volumes) {
@@ -232,7 +232,7 @@ DeviceOptix7::Impl::render_low_res()
   }
 
   params.is_low_res_pass = true;
-  params.low_res_rgba = (vec4f*)framebuffer_LR_rgba.d_pointer();
+  params.low_res_rgba = (vec4f*)framebuffer_lowres_rgba.d_pointer();
   params.frame.size_rcp = vec2f(1.f) / vec2f(params.frame.size);
 
   if (params.enable_path_tracing)
@@ -241,7 +241,7 @@ DeviceOptix7::Impl::render_low_res()
     stb_current = &sbt_raymarching_main.sbt;
   
   // Launch dimensions
-  const vec3i launch_dims = { params.frame.low_res_size.x, params.frame.low_res_size.y, 1 };
+  const vec3i launch_dims = { params.low_res_size.x, params.low_res_size.y, 1 };
 
   params_buffer.upload_async(&params, 1, framebuffer_stream);
 

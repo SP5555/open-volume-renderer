@@ -399,7 +399,7 @@ compute_screen_position(vec2f& screen, uint32_t& pixel_index)
   const int iy = optixGetLaunchIndex().y;
 
   const bool is_low_res = optix_launch_params.is_low_res_pass;
-  const vec2i fb_size = is_low_res ? optix_launch_params.frame.low_res_size
+  const vec2i fb_size = is_low_res ? optix_launch_params.low_res_size
                                    : optix_launch_params.frame.size;
 
   const auto rsize = vec2f(1.f) / vec2f(fb_size);

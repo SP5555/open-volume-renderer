@@ -634,8 +634,8 @@ __raygen__render_frame()
   bool is_low_res_pass = optix_launch_params.is_low_res_pass;
 
   if (is_low_res_pass) {
-    assert(optix_launch_params.frame.low_res_size.x > 0 && "invalid framebuffer size");
-    assert(optix_launch_params.frame.low_res_size.y > 0 && "invalid framebuffer size");
+    assert(optix_launch_params.low_res_size.x > 0 && "invalid framebuffer size");
+    assert(optix_launch_params.low_res_size.y > 0 && "invalid framebuffer size");
   } else {
     assert(optix_launch_params.frame.size.x > 0 && "invalid framebuffer size");
     assert(optix_launch_params.frame.size.y > 0 && "invalid framebuffer size");
@@ -710,7 +710,7 @@ __raygen__render_frame()
   if (is_low_res_pass) {
     optix_launch_params.low_res_rgba[pixel_index] = vec4f(output.color, output.alpha);
 
-    // const int2 size = optix_launch_params.frame.low_res_size;
+    // const int2 size = optix_launch_params.low_res_size;
     // const int mid_x = size.x / 2;
     // const int mid_y = size.y / 2;
     // const int mid_index = mid_y * size.x + mid_x;
@@ -747,6 +747,8 @@ __raygen__render_frame()
 
   /* to visualize sparse sampling results */
   // optix_launch_params.frame.grad[pixel_index] = vec3f(1.f);
+
+  optix_launch_params.frame.rgba[pixel_index].w = 1.f;
 }
 
 } // namespace optix7
