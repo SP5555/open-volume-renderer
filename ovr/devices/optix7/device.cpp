@@ -35,12 +35,12 @@ void
 DeviceOptix7::render()
 {
   auto s_LR = std::chrono::high_resolution_clock::now();
-  pimpl->render_low_res();
+  pimpl->renderLowRes();
   CUDA_CHECK(cudaDeviceSynchronize());
   auto e_LR = std::chrono::high_resolution_clock::now();
   auto d_LR = std::chrono::duration_cast<std::chrono::microseconds>(e_LR - s_LR);
 
-  pimpl->importance_map_update();
+  pimpl->updateImportanceMap();
 
   auto s_HR = std::chrono::high_resolution_clock::now();
   pimpl->render();

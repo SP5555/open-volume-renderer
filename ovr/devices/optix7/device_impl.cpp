@@ -117,7 +117,12 @@ DeviceOptix7::Impl::commit()
     CUDA_SYNC_CHECK(); /* stio all async rendering */
     params.frame.size = parent->params.fbsize.ref();
     framebuffer.resize(parent->params.fbsize.ref());
-    mlModel.importance_map_resize(params.d_importance_map, params.frame.size);
+    mlModel.resizeImportanceMap(
+      // resize this importance map to params.frame.size
+      params.d_importance_map,
+      params.low_res_size,
+      params.frame.size
+    );
     framebuffer_size_updated = true;
     framebuffer_reset = true;
   }
@@ -198,24 +203,20 @@ DeviceOptix7::Impl::commit()
 }
 
 void
-DeviceOptix7::Impl::importance_map_update()
+DeviceOptix7::Impl::updateImportanceMap()
 {
   if (framebuffer_reset || volumes_changed) {
-    mlModel.importance_map_update(
-      // IN: output buffer from low res render (RGBA or grayscale or smth else)
+    mlModel.updateImportanceMap(
+      // Input: Low-resolution RGBA buffer (vec4f* of params.low_res_size) for ML processing
       params.low_res_rgba,
-      // OUT: importance map that the high res render use (one floating point per pixel)
-      params.d_importance_map,
-      // IN: low res size (640x480 fixed)
-      params.low_res_size,
-      // IN: high res size (actual window)
-      params.frame.size
+      // Output: Importance map buffer (float* of params.frame.size) for high-resolution rendering
+      params.d_importance_map
     );
   }
 }
 
 void
-DeviceOptix7::Impl::render_low_res()
+DeviceOptix7::Impl::renderLowRes()
 {
   if (!framebuffer_reset && !volumes_changed) {
     // it is okay to not run low_res

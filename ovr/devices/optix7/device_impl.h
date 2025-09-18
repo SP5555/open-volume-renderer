@@ -27,8 +27,8 @@ public:
   void init(int argc, const char** argv, DeviceOptix7* parent);
   void swap();
   void commit();
-  void importance_map_update();
-  void render_low_res();
+  void updateImportanceMap();
+  void renderLowRes();
   void render();
   void mapframe(FrameBufferData*);
 
