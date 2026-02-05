@@ -48,7 +48,7 @@ DeviceOptix7::render()
   auto e_HR = std::chrono::high_resolution_clock::now();
   auto d_HR = std::chrono::duration_cast<std::chrono::microseconds>(e_HR - s_HR);
 
-  // printf("480p pass: %.3f ms | Full-res pass: %.3f ms\n", d_LR / 1000.0, d_HR / 1000.0);
+  printf("720p pass: %.3f ms | Full-res pass: %.3f ms\n", d_LR / 1000.0, d_HR / 1000.0);
   
   render_time += d_LR.count();
   render_time += d_HR.count();

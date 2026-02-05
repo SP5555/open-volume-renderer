@@ -175,6 +175,7 @@ DeviceOptix7::Impl::commit()
 
   if (parent->params.sample_per_pixel.update()) {
     params.sample_per_pixel = parent->params.sample_per_pixel.ref();
+    mlModel.setSampleBudget(params.sample_per_pixel);
     framebuffer_reset = true;
   }
 

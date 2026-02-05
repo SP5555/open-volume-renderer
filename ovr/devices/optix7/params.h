@@ -87,7 +87,7 @@ struct LaunchParams { // shared global data
   int32_t sample_per_pixel{ 1 };
 
   // for Low-Res Render Pass
-  vec2i low_res_size{ 640, 480 };
+  vec2i low_res_size{ 1280, 720 };
   bool is_low_res_pass{ false };
   vec4f* low_res_rgba;
   int32_t low_res_spp{ 1 };
